@@ -1,5 +1,7 @@
 import { CANVAS_WIDTH, CANVAS_HEIGHT, CELL, MAZE_OFFSET_Y, COLORS } from './constants.js';
 import { MazeRenderer } from './systems/mazeRenderer.js';
+import { Pacman } from './entities/pacman.js';
+import { InputHandler } from './systems/input.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -8,6 +10,10 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 const mazeRenderer = new MazeRenderer();
+const pacman = new Pacman();
+const input = new InputHandler(pacman);
+
+let lastTime = 0;
 
 function drawHUD() {
   ctx.fillStyle = COLORS.TEXT;
@@ -22,27 +28,18 @@ function drawHUD() {
 }
 
 function gameLoop(timestamp) {
+  const dt = lastTime ? Math.min((timestamp - lastTime) / 1000, 0.05) : 0;
+  lastTime = timestamp;
+
   // Clear
   ctx.fillStyle = COLORS.BACKGROUND;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+  pacman.update(dt);
+
   mazeRenderer.draw(ctx, timestamp);
+  pacman.draw(ctx);
   drawHUD();
-
-  // Draw Pac-Man placeholder at starting position
-  const pacX = 14 * CELL;
-  const pacY = 23 * CELL + MAZE_OFFSET_Y;
-  ctx.fillStyle = COLORS.PACMAN;
-  ctx.beginPath();
-  ctx.arc(pacX, pacY + CELL / 2, CELL * 0.45, 0.25 * Math.PI, 1.75 * Math.PI);
-  ctx.lineTo(pacX, pacY + CELL / 2);
-  ctx.fill();
-
-  // "READY!" text
-  ctx.fillStyle = COLORS.READY;
-  ctx.font = `${CELL * 0.8}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.fillText('READY!', CANVAS_WIDTH / 2, 17.5 * CELL + MAZE_OFFSET_Y);
 
   requestAnimationFrame(gameLoop);
 }
