@@ -1,8 +1,27 @@
 import { STATE, STARTING_LIVES, EXTRA_LIFE_SCORE } from '../constants.js';
 
+const HIGH_SCORE_KEY = 'pacman_high_score';
+
+function loadHighScore() {
+  try {
+    const stored = localStorage.getItem(HIGH_SCORE_KEY);
+    return stored ? parseInt(stored, 10) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveHighScore(score) {
+  try {
+    localStorage.setItem(HIGH_SCORE_KEY, String(score));
+  } catch {
+    // localStorage unavailable (tests, private browsing, etc.)
+  }
+}
+
 export const gameState = {
   score: 0,
-  highScore: 0,
+  highScore: loadHighScore(),
   lives: STARTING_LIVES,
   dotsRemaining: 244,
   powerPelletActive: false,
@@ -14,7 +33,10 @@ export const gameState = {
 
   addScore(points) {
     this.score += points;
-    if (this.score > this.highScore) this.highScore = this.score;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      saveHighScore(this.highScore);
+    }
     if (!this.extraLifeAwarded && this.score >= EXTRA_LIFE_SCORE) {
       this.extraLifeAwarded = true;
       this.lives++;
@@ -32,6 +54,8 @@ export const gameState = {
 
   reset() {
     this.score = 0;
+    const stored = loadHighScore();
+    this.highScore = Math.max(this.highScore, stored);
     this.lives = STARTING_LIVES;
     this.dotsRemaining = 244;
     this.powerPelletActive = false;
