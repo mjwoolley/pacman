@@ -1,4 +1,4 @@
-import { CELL, MAZE_COLS, MAZE_ROWS, MAZE_OFFSET_Y, BASE_SPEED, DIR } from '../constants.js';
+import { CELL, MAZE_COLS, MAZE_ROWS, MAZE_OFFSET_Y, BASE_SPEED, DIR, GHOST_MODE, FRIGHTENED_DURATION, FRIGHTENED_FLASH_START, COLORS } from '../constants.js';
 import { MAZE_DATA } from '../maze.js';
 
 export function isGhostPassable(row, col) {
@@ -42,6 +42,9 @@ export class Ghost {
     this.animTimer = 0;
     this.prevTile = null;
     this._bobDir = 1;
+    this.frightenedTimer = 0;
+    this.eaten = false;
+    this.homeTarget = { col: 14, row: 14 };
   }
 
   getTile() {
@@ -53,6 +56,19 @@ export class Ghost {
 
   reverseDirection() {
     this.dir = { x: -this.dir.x, y: -this.dir.y };
+  }
+
+  enterFrightened() {
+    if (this.eaten || this.mode === GHOST_MODE.EATEN) return;
+    if (this.inHouse) return;
+    this.mode = GHOST_MODE.FRIGHTENED;
+    this.frightenedTimer = 0;
+    this.reverseDirection();
+  }
+
+  updateFrightenedTimer(dt) {
+    if (this.mode !== GHOST_MODE.FRIGHTENED) return;
+    this.frightenedTimer += dt * 1000;
   }
 
   update(dt, pacman, blinky) {
@@ -101,11 +117,49 @@ export class Ghost {
       return;
     }
 
+    // Eaten mode: rush back to ghost house
+    if (this.mode === GHOST_MODE.EATEN) {
+      const tile = this.getTile();
+      // Reached the gate area — reset into house
+      if (tile.row >= 11 && tile.row <= 12 && (tile.col === 13 || tile.col === 14)) {
+        this.eaten = false;
+        this.x = 14 * CELL + CELL / 2;
+        this.y = 14 * CELL + CELL / 2;
+        this.exitingHouse = true;
+        this.inHouse = false;
+        return;
+      }
+
+      this.speed = BASE_SPEED * 2;
+      this.x += this.dir.x * this.speed * dt;
+      this.y += this.dir.y * this.speed * dt;
+
+      // Tunnel wrap
+      if (this.x < 0) {
+        this.x = MAZE_COLS * CELL;
+      } else if (this.x > MAZE_COLS * CELL) {
+        this.x = 0;
+      }
+
+      const currentTile = this.getTile();
+      if (this.prevTile === null ||
+          currentTile.col !== this.prevTile.col ||
+          currentTile.row !== this.prevTile.row) {
+        this.x = currentTile.col * CELL + CELL / 2;
+        this.y = currentTile.row * CELL + CELL / 2;
+        this.pickDirection(currentTile.row, currentTile.col, pacman, blinky);
+      }
+      this.prevTile = { col: currentTile.col, row: currentTile.row };
+      return;
+    }
+
     // Normal movement
     const tile = this.getTile();
 
-    // Tunnel speed: 50%
+    // Speed adjustments
     if (tile.row === 14 && (tile.col <= 5 || tile.col >= 22)) {
+      this.speed = BASE_SPEED * 0.5; // tunnel
+    } else if (this.mode === GHOST_MODE.FRIGHTENED) {
       this.speed = BASE_SPEED * 0.5;
     } else {
       this.speed = BASE_SPEED;
@@ -138,6 +192,30 @@ export class Ghost {
   pickDirection(row, col, pacman, blinky) {
     let available = getAvailableDirections(row, col, this.dir);
     if (available.length === 0) return;
+
+    // Frightened mode: random direction
+    if (this.mode === GHOST_MODE.FRIGHTENED) {
+      this.dir = available[Math.floor(Math.random() * available.length)];
+      return;
+    }
+
+    // Eaten mode: target above gate
+    if (this.mode === GHOST_MODE.EATEN) {
+      const target = { col: 14, row: 11 };
+      let bestDir = available[0];
+      let bestDist = Infinity;
+      for (const d of available) {
+        const nc = col + d.x;
+        const nr = row + d.y;
+        const dist = Math.sqrt((nc - target.col) ** 2 + (nr - target.row) ** 2);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestDir = d;
+        }
+      }
+      this.dir = bestDir;
+      return;
+    }
 
     // No-up zones
     if (this.mode === 'scatter' || this.mode === 'chase') {
@@ -181,14 +259,66 @@ export class Ghost {
     ctx.save();
     ctx.translate(cx, cy);
 
-    // Body color
-    ctx.fillStyle = this.color;
+    // Eaten: draw only eyes
+    if (this.mode === GHOST_MODE.EATEN) {
+      this._drawEyes(ctx, r);
+      ctx.restore();
+      return;
+    }
 
-    // Top half: semicircle
+    // Frightened: blue/white body with spooked face
+    if (this.mode === GHOST_MODE.FRIGHTENED) {
+      // Body color: blue, or flash blue/white
+      if (this.frightenedTimer >= FRIGHTENED_FLASH_START) {
+        const flashIndex = Math.floor(this.frightenedTimer / 200) % 2;
+        ctx.fillStyle = flashIndex === 0 ? COLORS.FRIGHTENED : COLORS.FRIGHTENED_FLASH;
+      } else {
+        ctx.fillStyle = COLORS.FRIGHTENED;
+      }
+
+      this._drawBody(ctx, r);
+
+      // Spooked face: small dot eyes
+      const eyeOffsetX = r * 0.3;
+      ctx.fillStyle = '#FFFFFF';
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(side * eyeOffsetX, -r * 0.15, r * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Wavy mouth
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const mouthY = r * 0.25;
+      const segments = 4;
+      const mouthWidth = r * 1.2;
+      const startX = -mouthWidth / 2;
+      ctx.moveTo(startX, mouthY);
+      for (let i = 0; i <= segments; i++) {
+        const mx = startX + (i / segments) * mouthWidth;
+        const my = mouthY + (i % 2 === 0 ? 0 : -r * 0.15);
+        ctx.lineTo(mx, my);
+      }
+      ctx.stroke();
+
+      ctx.restore();
+      return;
+    }
+
+    // Normal ghost drawing
+    ctx.fillStyle = this.color;
+    this._drawBody(ctx, r);
+    this._drawEyes(ctx, r);
+
+    ctx.restore();
+  }
+
+  _drawBody(ctx, r) {
     ctx.beginPath();
     ctx.arc(0, 0, r, Math.PI, 0, false);
 
-    // Bottom: rectangle with wavy bumps
     const phase = this.animTimer * 5;
     const bumps = 3;
     const bumpWidth = (2 * r) / bumps;
@@ -201,8 +331,9 @@ export class Ghost {
     }
     ctx.closePath();
     ctx.fill();
+  }
 
-    // Eyes: white ovals
+  _drawEyes(ctx, r) {
     const eyeOffsetX = r * 0.3;
     const eyeW = r * 0.25;
     const eyeH = r * 0.35;
@@ -220,7 +351,5 @@ export class Ghost {
       ctx.arc(side * eyeOffsetX + pupilOX, -r * 0.15 + pupilOY, r * 0.1, 0, Math.PI * 2);
       ctx.fill();
     }
-
-    ctx.restore();
   }
 }

@@ -1,4 +1,4 @@
-import { COLORS, DIR, MODE_TIMING } from '../constants.js';
+import { CELL, COLORS, DIR, MODE_TIMING, GHOST_MODE, FRIGHTENED_DURATION, MAZE_OFFSET_Y, SCORE } from '../constants.js';
 import { Ghost } from '../entities/ghost.js';
 import { gameState } from './gameState.js';
 
@@ -45,9 +45,70 @@ export class GhostManager {
     this.modeIndex = 0;
     this.modeTimer = 0;
     this.globalMode = 'scatter';
+    this.frightenedActive = false;
+    this.frightenedTimer = 0;
+    this.scorePopups = [];
+  }
+
+  triggerFrightened() {
+    this.frightenedActive = true;
+    this.frightenedTimer = 0;
+    gameState.powerPelletActive = true;
+    gameState.ghostEatCombo = 0;
+    for (const ghost of this.ghosts) {
+      ghost.enterFrightened();
+    }
+  }
+
+  checkGhostCollision(pacman) {
+    const pacTile = pacman.getTile();
+    for (const ghost of this.ghosts) {
+      if (ghost.mode === GHOST_MODE.FRIGHTENED) {
+        const gt = ghost.getTile();
+        if (gt.col === pacTile.col && gt.row === pacTile.row) {
+          gameState.ghostEatCombo++;
+          const points = SCORE.GHOST_BASE * (2 ** (gameState.ghostEatCombo - 1));
+          gameState.addScore(points);
+          ghost.mode = GHOST_MODE.EATEN;
+          ghost.eaten = true;
+          this.scorePopups.push({
+            x: ghost.x,
+            y: ghost.y + MAZE_OFFSET_Y,
+            text: String(points),
+            timer: 1.0,
+          });
+        }
+      }
+    }
   }
 
   update(dt, pacman) {
+    // Update frightened timer
+    if (this.frightenedActive) {
+      this.frightenedTimer += dt * 1000;
+      if (this.frightenedTimer >= FRIGHTENED_DURATION) {
+        this.frightenedActive = false;
+        gameState.powerPelletActive = false;
+        for (const ghost of this.ghosts) {
+          if (ghost.mode === GHOST_MODE.FRIGHTENED) {
+            ghost.mode = this.globalMode;
+          }
+        }
+      }
+    }
+
+    // Update score popups
+    for (let i = this.scorePopups.length - 1; i >= 0; i--) {
+      this.scorePopups[i].timer -= dt;
+      if (this.scorePopups[i].timer <= 0) {
+        this.scorePopups.splice(i, 1);
+      }
+    }
+
+    // Check ghost collision
+    this.checkGhostCollision(pacman);
+
+    // Mode timing (scatter/chase switching)
     this.modeTimer += dt * 1000;
 
     const timing = MODE_TIMING[this.modeIndex];
@@ -57,9 +118,10 @@ export class GhostManager {
       if (this.modeIndex < MODE_TIMING.length) {
         this.globalMode = MODE_TIMING[this.modeIndex].mode;
       }
-      // Reverse direction on all ghosts not in house
+      // Reverse direction on ghosts not in house, not frightened, not eaten
       for (const ghost of this.ghosts) {
-        if (!ghost.inHouse && !ghost.exitingHouse) {
+        if (!ghost.inHouse && !ghost.exitingHouse &&
+            ghost.mode !== GHOST_MODE.FRIGHTENED && ghost.mode !== GHOST_MODE.EATEN) {
           ghost.reverseDirection();
         }
       }
@@ -75,9 +137,11 @@ export class GhostManager {
 
     // Set mode and update
     for (const ghost of this.ghosts) {
-      if (!ghost.inHouse && !ghost.exitingHouse) {
+      if (!ghost.inHouse && !ghost.exitingHouse &&
+          ghost.mode !== GHOST_MODE.FRIGHTENED && ghost.mode !== GHOST_MODE.EATEN) {
         ghost.mode = this.globalMode;
       }
+      ghost.updateFrightenedTimer(dt);
       ghost.update(dt, pacman, this.blinky);
     }
   }
@@ -85,6 +149,15 @@ export class GhostManager {
   draw(ctx) {
     for (const ghost of this.ghosts) {
       ghost.draw(ctx);
+    }
+
+    // Draw score popups
+    for (const popup of this.scorePopups) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `${CELL * 0.6}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(popup.text, popup.x, popup.y);
     }
   }
 }

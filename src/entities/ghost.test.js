@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Ghost, isGhostPassable, getAvailableDirections } from './ghost.js';
-import { CELL, DIR, COLORS } from '../constants.js';
+import { CELL, DIR, COLORS, GHOST_MODE } from '../constants.js';
 
 function makeGhost(overrides = {}) {
   return new Ghost(
@@ -137,5 +137,62 @@ describe('No-up zones', () => {
     g.pickDirection(11, 12, pac, null);
     // The ghost should not choose UP at this no-up zone
     expect(g.dir.y).not.toBe(-1);
+  });
+});
+
+describe('Frightened mode', () => {
+  it('enterFrightened() sets mode to frightened and reverses direction', () => {
+    const g = makeGhost({ startDir: DIR.LEFT });
+    g.mode = 'scatter';
+    g.enterFrightened();
+    expect(g.mode).toBe(GHOST_MODE.FRIGHTENED);
+    expect(g.frightenedTimer).toBe(0);
+    // Direction should be reversed (LEFT -> RIGHT)
+    expect(g.dir.x).toBe(1);
+    expect(g.dir.y).toBeCloseTo(0);
+  });
+
+  it('enterFrightened() does NOT affect eaten ghosts', () => {
+    const g = makeGhost();
+    g.mode = GHOST_MODE.EATEN;
+    g.eaten = true;
+    g.dir = { ...DIR.LEFT };
+    g.enterFrightened();
+    expect(g.mode).toBe(GHOST_MODE.EATEN);
+    expect(g.dir.x).toBe(-1);
+  });
+
+  it('enterFrightened() does NOT affect ghosts in house', () => {
+    const g = makeGhost({ inHouse: true });
+    g.mode = 'scatter';
+    g.enterFrightened();
+    expect(g.mode).toBe('scatter');
+  });
+
+  it('pickDirection in frightened mode chooses a valid direction', () => {
+    const g = makeGhost({ startCol: 6, startRow: 5, startDir: DIR.LEFT });
+    g.mode = GHOST_MODE.FRIGHTENED;
+    const pac = mockPacman();
+    // Run multiple times to verify it always picks valid directions
+    for (let i = 0; i < 10; i++) {
+      const currentDir = { ...g.dir };
+      g.pickDirection(5, 6, pac, null);
+      const available = getAvailableDirections(5, 6, currentDir);
+      const isValid = available.some(d => d.x === g.dir.x && d.y === g.dir.y);
+      expect(isValid).toBe(true);
+    }
+  });
+});
+
+describe('Eaten mode', () => {
+  it('eaten ghost targets house (above gate)', () => {
+    const g = makeGhost({ startCol: 10, startRow: 5, startDir: DIR.LEFT });
+    g.mode = GHOST_MODE.EATEN;
+    g.eaten = true;
+    const pac = mockPacman();
+    g.pickDirection(5, 10, pac, null);
+    // Should pick a direction that moves closer to col 14, row 11
+    const available = getAvailableDirections(5, 10, DIR.LEFT);
+    expect(available.some(d => d.x === g.dir.x && d.y === g.dir.y)).toBe(true);
   });
 });

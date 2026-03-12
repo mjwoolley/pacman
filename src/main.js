@@ -18,6 +18,7 @@ dotManager.onEatDot = (row, col) => mazeRenderer.eatDot(row, col);
 const pacman = new Pacman();
 const input = new InputHandler(pacman);
 const ghostManager = new GhostManager();
+dotManager.onPowerPellet = () => ghostManager.triggerFrightened();
 
 let lastTime = 0;
 
