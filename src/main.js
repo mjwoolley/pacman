@@ -6,6 +6,7 @@ import { Pacman } from './entities/pacman.js';
 import { InputHandler } from './systems/input.js';
 import { GhostManager } from './systems/ghostManager.js';
 import { checkPacmanGhostCollision } from './systems/collisionManager.js';
+import { Fruit } from './entities/fruit.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -18,6 +19,7 @@ let dotManager = new DotManager();
 let pacman = new Pacman();
 const input = new InputHandler(pacman);
 let ghostManager = new GhostManager();
+let fruit = new Fruit();
 
 dotManager.onEatDot = (row, col) => mazeRenderer.eatDot(row, col);
 dotManager.onPowerPellet = () => ghostManager.triggerFrightened();
@@ -92,6 +94,8 @@ function gameLoop(timestamp) {
     pacman.update(dt);
     dotManager.checkCollection(pacman);
     ghostManager.update(dt, pacman);
+    fruit.update(dt);
+    fruit.checkCollection(pacman);
 
     // Check for win
     if (gameState.won) {
@@ -107,6 +111,7 @@ function gameLoop(timestamp) {
 
     pacman.draw(ctx);
     ghostManager.draw(ctx);
+    fruit.draw(ctx);
   } else if (state === STATE.DYING) {
     if (freezeTimer > 0) {
       // Freeze frame — show everything but don't update
@@ -154,6 +159,7 @@ document.addEventListener('keydown', () => {
     pacman.resetPosition();
     ghostManager = new GhostManager();
     dotManager.onPowerPellet = () => ghostManager.triggerFrightened();
+    fruit = new Fruit();
     stateTimer = 0;
     freezeTimer = 0;
   }
