@@ -39,11 +39,17 @@ describe("Pacman", () => {
     expect(pac.y % CELL).toBeCloseTo(CELL / 2, 0);
   });
 
-  it("tunnel wrap: x < 0 wraps to MAZE_COLS * CELL", () => {
+  it("tunnel wrap: Pac-Man traverses left tunnel exit and reappears on right", () => {
     const pac = new Pacman();
-    pac.x = -1;
+    // Place Pac-Man on tunnel row (14), near left edge, moving left
+    pac.x = CELL * 0.5; // half a cell from left edge
+    pac.y = 14 * CELL + CELL / 2;
     pac.dir = DIR.LEFT;
-    pac.update(0); // dt=0 just to trigger wrap logic
-    expect(pac.x).toBe(MAZE_COLS * CELL);
+    // Simulate enough frames to cross x=0
+    for (let i = 0; i < 30; i++) {
+      pac.update(1 / 60);
+      if (pac.x >= MAZE_COLS * CELL - CELL) break; // wrapped
+    }
+    expect(pac.x).toBeGreaterThan(CELL * (MAZE_COLS / 2)); // reappeared on right side
   });
 });

@@ -8,7 +8,8 @@ const TUNNEL_SPEED_FACTOR = 0.6;
 const TUNNEL_ROW = 14;
 
 function isPassable(row, col) {
-  if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) return false;
+  if (row < 0 || row >= MAZE_ROWS) return false;
+  if (col < 0 || col >= MAZE_COLS) return true; // tunnel exits are passable
   const t = MAZE_DATA[row][col];
   return t === 0 || t === 2 || t === 3 || t === 6;
 }

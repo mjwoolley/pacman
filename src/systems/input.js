@@ -1,3 +1,5 @@
+import { DIR } from "../constants.js";
+
 export class InputHandler {
   constructor(pacman) {
     this.pacman = pacman;
@@ -7,10 +9,10 @@ export class InputHandler {
 
   _onKeyDown(e) {
     const dirMap = {
-      ArrowUp:    { x: 0, y: -1 },
-      ArrowDown:  { x: 0, y:  1 },
-      ArrowLeft:  { x: -1, y: 0 },
-      ArrowRight: { x:  1, y: 0 },
+      ArrowUp:    DIR.UP,
+      ArrowDown:  DIR.DOWN,
+      ArrowLeft:  DIR.LEFT,
+      ArrowRight: DIR.RIGHT,
     };
     if (dirMap[e.key]) {
       e.preventDefault();
