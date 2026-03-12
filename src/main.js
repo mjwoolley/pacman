@@ -4,6 +4,7 @@ import { DotManager } from './systems/dotManager.js';
 import { gameState } from './systems/gameState.js';
 import { Pacman } from './entities/pacman.js';
 import { InputHandler } from './systems/input.js';
+import { GhostManager } from './systems/ghostManager.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -16,6 +17,7 @@ const dotManager = new DotManager();
 dotManager.onEatDot = (row, col) => mazeRenderer.eatDot(row, col);
 const pacman = new Pacman();
 const input = new InputHandler(pacman);
+const ghostManager = new GhostManager();
 
 let lastTime = 0;
 
@@ -41,10 +43,12 @@ function gameLoop(timestamp) {
 
   pacman.update(dt);
   dotManager.checkCollection(pacman);
+  ghostManager.update(dt, pacman);
 
   mazeRenderer.draw(ctx, timestamp);
   dotManager.draw(ctx, timestamp);
   pacman.draw(ctx);
+  ghostManager.draw(ctx);
   drawHUD();
 
   requestAnimationFrame(gameLoop);
