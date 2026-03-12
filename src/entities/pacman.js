@@ -18,6 +18,8 @@ function tileCenter(col, row) {
   return { x: col * CELL + CELL / 2, y: row * CELL + CELL / 2 };
 }
 
+const DEATH_DURATION = 1.5; // seconds
+
 export class Pacman {
   constructor() {
     const start = tileCenter(PACMAN_START.col, PACMAN_START.row);
@@ -30,10 +32,41 @@ export class Pacman {
     this.mouthDir = 1;
     this.animTimer = 0;
     this.animFrame = 1; // start at frame 1 (30°)
+    this._dying = false;
+    this.deathTimer = 0;
   }
 
   setDirection(dir) {
     this.nextDir = dir;
+  }
+
+  startDeath() {
+    this._dying = true;
+    this.deathTimer = 0;
+    this.dir = DIR.NONE;
+    this.nextDir = DIR.NONE;
+  }
+
+  isDying() {
+    return this._dying;
+  }
+
+  isDeathComplete() {
+    return this._dying && this.deathTimer >= DEATH_DURATION;
+  }
+
+  resetPosition() {
+    const start = tileCenter(PACMAN_START.col, PACMAN_START.row);
+    this.x = start.x;
+    this.y = start.y;
+    this.dir = DIR.NONE;
+    this.nextDir = DIR.NONE;
+    this._dying = false;
+    this.deathTimer = 0;
+    this.mouthAngle = 30;
+    this.animFrame = 1;
+    this.mouthDir = 1;
+    this.animTimer = 0;
   }
 
   getTile() {
@@ -44,6 +77,11 @@ export class Pacman {
   }
 
   update(dt) {
+    if (this._dying) {
+      this.deathTimer += dt;
+      return;
+    }
+
     // Update speed based on tunnel
     const tile = this.getTile();
     this.speed = tile.row === TUNNEL_ROW && (tile.col <= 5 || tile.col >= 22)
@@ -122,6 +160,11 @@ export class Pacman {
   }
 
   draw(ctx) {
+    if (this._dying) {
+      this._drawDeath(ctx);
+      return;
+    }
+
     const radius = CELL * 0.45;
     const halfMouth = (this.mouthAngle * Math.PI) / 180;
 
@@ -138,6 +181,24 @@ export class Pacman {
     ctx.beginPath();
     ctx.arc(cx, cy, radius, rotation + halfMouth, rotation + 2 * Math.PI - halfMouth);
     ctx.lineTo(cx + Math.cos(rotation) * (halfMouth > 0 ? 0 : radius), cy + Math.sin(rotation) * (halfMouth > 0 ? 0 : radius));
+    ctx.lineTo(cx, cy);
+    ctx.fill();
+  }
+
+  _drawDeath(ctx) {
+    const progress = Math.min(this.deathTimer / DEATH_DURATION, 1);
+    if (progress >= 1) return; // fully disappeared
+
+    const radius = CELL * 0.45 * (1 - progress);
+    const rotation = progress * Math.PI * 2 * 2; // spin 2 full rotations
+    const halfMouth = progress * Math.PI; // mouth opens to full circle
+
+    const cx = this.x;
+    const cy = this.y + MAZE_OFFSET_Y;
+
+    ctx.fillStyle = COLORS.PACMAN;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, rotation + halfMouth, rotation + 2 * Math.PI - halfMouth);
     ctx.lineTo(cx, cy);
     ctx.fill();
   }

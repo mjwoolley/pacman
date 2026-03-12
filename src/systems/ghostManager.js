@@ -1,4 +1,4 @@
-import { CELL, COLORS, DIR, MODE_TIMING, GHOST_MODE, FRIGHTENED_DURATION, MAZE_OFFSET_Y, SCORE } from '../constants.js';
+import { CELL, COLORS, DIR, MODE_TIMING, GHOST_MODE, FRIGHTENED_DURATION, MAZE_OFFSET_Y, SCORE, GHOST_HOUSE } from '../constants.js';
 import { Ghost } from '../entities/ghost.js';
 import { gameState } from './gameState.js';
 
@@ -45,6 +45,53 @@ export class GhostManager {
     this.modeIndex = 0;
     this.modeTimer = 0;
     this.globalMode = 'scatter';
+    this.frightenedActive = false;
+    this.frightenedTimer = 0;
+    this.scorePopups = [];
+  }
+
+  resetPositions() {
+    // Reset Blinky - starts outside house
+    const blinky = this.ghosts[0];
+    blinky.x = 14 * CELL + CELL / 2;
+    blinky.y = 11 * CELL + CELL / 2;
+    blinky.dir = DIR.LEFT;
+    blinky.inHouse = false;
+    blinky.exitingHouse = false;
+    blinky.mode = this.globalMode;
+    blinky.eaten = false;
+
+    // Reset Pinky
+    const pinky = this.ghosts[1];
+    pinky.x = 14 * CELL + CELL / 2;
+    pinky.y = 14 * CELL + CELL / 2;
+    pinky.dir = DIR.DOWN;
+    pinky.inHouse = true;
+    pinky.exitingHouse = false;
+    pinky.mode = this.globalMode;
+    pinky.eaten = false;
+
+    // Reset Inky
+    const inky = this.ghosts[2];
+    inky.x = 12 * CELL + CELL / 2;
+    inky.y = 14 * CELL + CELL / 2;
+    inky.dir = DIR.UP;
+    inky.inHouse = true;
+    inky.exitingHouse = false;
+    inky.mode = this.globalMode;
+    inky.eaten = false;
+
+    // Reset Clyde
+    const clyde = this.ghosts[3];
+    clyde.x = 16 * CELL + CELL / 2;
+    clyde.y = 14 * CELL + CELL / 2;
+    clyde.dir = DIR.UP;
+    clyde.inHouse = true;
+    clyde.exitingHouse = false;
+    clyde.mode = this.globalMode;
+    clyde.eaten = false;
+
+    // Reset frightened state
     this.frightenedActive = false;
     this.frightenedTimer = 0;
     this.scorePopups = [];

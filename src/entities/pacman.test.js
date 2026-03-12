@@ -52,4 +52,41 @@ describe("Pacman", () => {
     }
     expect(pac.x).toBeGreaterThan(CELL * (MAZE_COLS / 2)); // reappeared on right side
   });
+
+  it("startDeath() begins dying state", () => {
+    const pac = new Pacman();
+    pac.startDeath();
+    expect(pac.isDying()).toBe(true);
+    expect(pac.isDeathComplete()).toBe(false);
+  });
+
+  it("death animation completes after sufficient time", () => {
+    const pac = new Pacman();
+    pac.startDeath();
+    // Advance 2 seconds (death duration is 1.5s)
+    pac.update(2.0);
+    expect(pac.isDeathComplete()).toBe(true);
+  });
+
+  it("dying pacman does not move", () => {
+    const pac = new Pacman();
+    pac.dir = DIR.RIGHT;
+    pac.startDeath();
+    const startX = pac.x;
+    pac.update(1 / 60);
+    expect(pac.x).toBe(startX);
+  });
+
+  it("resetPosition() snaps back to start", () => {
+    const pac = new Pacman();
+    pac.x = 100;
+    pac.y = 200;
+    pac.dir = DIR.RIGHT;
+    pac.startDeath();
+    pac.resetPosition();
+    expect(pac.getTile().col).toBe(PACMAN_START.col);
+    expect(pac.getTile().row).toBe(PACMAN_START.row);
+    expect(pac.isDying()).toBe(false);
+    expect(pac.dir).toEqual(DIR.NONE);
+  });
 });
