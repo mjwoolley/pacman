@@ -151,7 +151,6 @@ document.addEventListener('keydown', () => {
     mazeRenderer = new MazeRenderer();
     dotManager = new DotManager();
     dotManager.onEatDot = (row, col) => mazeRenderer.eatDot(row, col);
-    dotManager.onPowerPellet = () => ghostManager.triggerFrightened();
     pacman.resetPosition();
     ghostManager = new GhostManager();
     dotManager.onPowerPellet = () => ghostManager.triggerFrightened();
