@@ -6,7 +6,7 @@ import { MAZE_DATA } from "../maze.js";
  * Out-of-bounds cells on left/right are treated as non-wall (for tunnel openings).
  * Out-of-bounds cells on top/bottom are treated as wall (border continuity).
  */
-function isWall(row, col) {
+export function isWall(row, col) {
   if (row < 0 || row >= MAZE_ROWS) return true;
   if (col < 0 || col >= MAZE_COLS) return false;
   return MAZE_DATA[row][col] === 1;

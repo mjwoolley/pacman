@@ -21,12 +21,12 @@ function drawHUD() {
   ctx.fillText('0', CANVAS_WIDTH - CELL, CELL * 2.5);
 }
 
-function render() {
+function gameLoop(timestamp) {
   // Clear
   ctx.fillStyle = COLORS.BACKGROUND;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  mazeRenderer.draw(ctx, performance.now());
+  mazeRenderer.draw(ctx, timestamp);
   drawHUD();
 
   // Draw Pac-Man placeholder at starting position
@@ -43,8 +43,9 @@ function render() {
   ctx.font = `${CELL * 0.8}px monospace`;
   ctx.textAlign = 'center';
   ctx.fillText('READY!', CANVAS_WIDTH / 2, 17.5 * CELL + MAZE_OFFSET_Y);
+
+  requestAnimationFrame(gameLoop);
 }
 
-render();
-
+requestAnimationFrame(gameLoop);
 console.log('🟡 Pac-Man initialized — canvas ready');
