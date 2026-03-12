@@ -58,7 +58,7 @@ export class Ghost {
   update(dt, pacman, blinky) {
     this.animTimer += dt;
 
-    if (this.inHouse) {
+    if (this.inHouse && !this.exitingHouse) {
       // Bob up/down between row 13.5 and row 15
       const minY = 13.5 * CELL + CELL / 2;
       const maxY = 15 * CELL + CELL / 2;
