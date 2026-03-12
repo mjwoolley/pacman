@@ -13,6 +13,7 @@ canvas.height = CANVAS_HEIGHT;
 
 const mazeRenderer = new MazeRenderer();
 const dotManager = new DotManager();
+dotManager.onEatDot = (row, col) => mazeRenderer.eatDot(row, col);
 const pacman = new Pacman();
 const input = new InputHandler(pacman);
 
