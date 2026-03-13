@@ -23,6 +23,7 @@ export const GHOST_HOUSE = { col: 14, row: 14 };
 
 // Speeds (pixels per second at scale)
 export const BASE_SPEED = CELL * 9.375; // ~80% of max in original
+export const GHOST_SPEED_FACTOR = 0.25;
 
 // Scoring
 export const SCORE = {
