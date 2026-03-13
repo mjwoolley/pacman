@@ -9,6 +9,7 @@ import { checkPacmanGhostCollision } from './systems/collisionManager.js';
 import { Fruit } from './entities/fruit.js';
 import { HUD } from './systems/hud.js';
 import { ScreenManager } from './systems/screenManager.js';
+import { soundManager } from './systems/soundManager.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -31,6 +32,15 @@ dotManager.onPowerPellet = () => ghostManager.triggerFrightened();
 let lastTime = 0;
 let freezeTimer = 0;
 let canRestart = false;
+let introComplete = true;
+let audioInitialized = false;
+
+function startIntro() {
+  introComplete = false;
+  soundManager.playIntro().then(() => {
+    introComplete = true;
+  });
+}
 
 gameState.currentState = STATE.READY;
 
@@ -55,8 +65,9 @@ function gameLoop(timestamp) {
     ghostManager.draw(ctx);
     fruit.draw(ctx);
     screenManager.drawReady(ctx);
-    if (screenManager.isReadyComplete()) {
+    if (screenManager.isReadyComplete() && introComplete) {
       gameState.currentState = STATE.PLAYING;
+      soundManager.startSiren();
       screenManager.reset();
     }
   } else if (state === STATE.PLAYING) {
@@ -71,6 +82,7 @@ function gameLoop(timestamp) {
     // Check for win
     if (gameState.won) {
       gameState.currentState = STATE.WIN;
+      soundManager.stopAll();
       screenManager.reset();
       canRestart = false;
     } else {
@@ -78,6 +90,9 @@ function gameLoop(timestamp) {
       const result = checkPacmanGhostCollision(pacman, ghostManager.ghosts);
       if (result.died) {
         gameState.currentState = STATE.DYING;
+        soundManager.stopSiren();
+        soundManager.stopFrightened();
+        soundManager.playDeath();
         freezeTimer = 1;
       }
     }
@@ -101,12 +116,14 @@ function gameLoop(timestamp) {
         gameState.loseLife();
         if (gameState.isGameOver()) {
           gameState.currentState = STATE.GAME_OVER;
+          soundManager.stopAll();
           screenManager.reset();
           canRestart = false;
         } else {
           pacman.resetPosition();
           ghostManager.resetPositions();
           gameState.currentState = STATE.READY;
+          startIntro();
           screenManager.reset();
         }
       }
@@ -127,6 +144,7 @@ function gameLoop(timestamp) {
 }
 
 function fullRestart() {
+  soundManager.stopAll();
   gameState.reset();
   mazeRenderer = new MazeRenderer();
   dotManager = new DotManager();
@@ -139,9 +157,19 @@ function fullRestart() {
   screenManager.reset();
   freezeTimer = 0;
   canRestart = false;
+  startIntro();
 }
 
 document.addEventListener('keydown', () => {
+  if (!audioInitialized) {
+    audioInitialized = true;
+    soundManager.init();
+    if (gameState.currentState === STATE.READY) {
+      startIntro();
+    }
+  } else {
+    soundManager.init();
+  }
   if (canRestart && (gameState.currentState === STATE.GAME_OVER || gameState.currentState === STATE.WIN)) {
     fullRestart();
   }

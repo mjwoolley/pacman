@@ -1,6 +1,7 @@
 import { CELL, MAZE_OFFSET_Y, COLORS, SCORE } from "../constants.js";
 import { MAZE_DATA } from "../maze.js";
 import { gameState } from "./gameState.js";
+import { soundManager } from "./soundManager.js";
 
 export class DotManager {
   constructor() {
@@ -29,6 +30,7 @@ export class DotManager {
     if (!this.dots.has(key)) return;
 
     this.dots.delete(key);
+    soundManager.playChomp();
     const tile = MAZE_DATA[row][col];
     gameState.addScore(tile === 3 ? SCORE.POWER_PELLET : SCORE.DOT);
     gameState.dotsRemaining--;

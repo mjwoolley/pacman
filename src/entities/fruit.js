@@ -1,5 +1,6 @@
 import { CELL, MAZE_OFFSET_Y, SCORE } from '../constants.js';
 import { gameState } from '../systems/gameState.js';
+import { soundManager } from '../systems/soundManager.js';
 
 const FRUIT_COL = 14;
 const FRUIT_ROW = 17;
@@ -52,6 +53,7 @@ export class Fruit {
     const tile = pacman.getTile();
     if (tile.col === FRUIT_COL && tile.row === FRUIT_ROW) {
       this.active = false;
+      soundManager.playFruit();
       gameState.addScore(SCORE.CHERRY);
       this.scorePopup = {
         x: FRUIT_COL * CELL + CELL / 2,
