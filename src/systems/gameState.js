@@ -1,4 +1,5 @@
 import { STATE, STARTING_LIVES, EXTRA_LIFE_SCORE } from '../constants.js';
+import { soundManager } from './soundManager.js';
 
 const HIGH_SCORE_KEY = 'pacman_high_score';
 
@@ -40,6 +41,7 @@ export const gameState = {
     if (!this.extraLifeAwarded && this.score >= EXTRA_LIFE_SCORE) {
       this.extraLifeAwarded = true;
       this.lives++;
+      soundManager.playExtraLife();
     }
   },
 

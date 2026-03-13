@@ -1,6 +1,7 @@
 import { CELL, COLORS, DIR, MODE_TIMING, GHOST_MODE, FRIGHTENED_DURATION, MAZE_OFFSET_Y, SCORE, GHOST_HOUSE } from '../constants.js';
 import { Ghost } from '../entities/ghost.js';
 import { gameState } from './gameState.js';
+import { soundManager } from './soundManager.js';
 
 // Ghost spawn configurations — single source of truth for constructor and resetPositions
 const GHOST_CONFIGS = [
@@ -83,6 +84,8 @@ export class GhostManager {
     this.frightenedTimer = 0;
     gameState.powerPelletActive = true;
     gameState.ghostEatCombo = 0;
+    soundManager.stopSiren();
+    soundManager.startFrightened();
     for (const ghost of this.ghosts) {
       ghost.enterFrightened();
     }
@@ -99,6 +102,7 @@ export class GhostManager {
           gameState.addScore(points);
           ghost.mode = GHOST_MODE.EATEN;
           ghost.eaten = true;
+          soundManager.playEatGhost();
           this.scorePopups.push({
             x: ghost.x,
             y: ghost.y + MAZE_OFFSET_Y,
@@ -117,6 +121,8 @@ export class GhostManager {
       if (this.frightenedTimer >= FRIGHTENED_DURATION) {
         this.frightenedActive = false;
         gameState.powerPelletActive = false;
+        soundManager.stopFrightened();
+        soundManager.startSiren();
         for (const ghost of this.ghosts) {
           if (ghost.mode === GHOST_MODE.FRIGHTENED) {
             ghost.mode = this.globalMode;
