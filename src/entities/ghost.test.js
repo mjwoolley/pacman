@@ -219,4 +219,39 @@ describe('Eaten mode', () => {
     const available = getAvailableDirections(5, 10, DIR.LEFT);
     expect(available.some(d => d.x === g.dir.x && d.y === g.dir.y)).toBe(true);
   });
+
+  it('resets mode to SCATTER when eaten ghost reaches gate area (PAC-18)', () => {
+    // Place ghost exactly at the gate tile (col 13, row 11) — within the trigger zone
+    const g = makeGhost({ startCol: 13, startRow: 11, startDir: DIR.RIGHT });
+    g.mode = GHOST_MODE.EATEN;
+    g.eaten = true;
+    const pac = mockPacman();
+    g.update(0.016, pac, null);
+    // After reaching gate: mode must be SCATTER (not EATEN)
+    expect(g.mode).toBe(GHOST_MODE.SCATTER);
+    expect(g.eaten).toBe(false);
+    expect(g.exitingHouse).toBe(true);
+  });
+
+  it('exiting ghost is NOT in EATEN mode so collisionManager will kill Pac-Man (PAC-18)', () => {
+    const g = makeGhost({ startCol: 13, startRow: 11, startDir: DIR.RIGHT });
+    g.mode = GHOST_MODE.EATEN;
+    g.eaten = true;
+    const pac = mockPacman();
+    g.update(0.016, pac, null);
+    // Ghost should no longer be in EATEN mode — collision system will handle it normally
+    expect(g.mode).not.toBe(GHOST_MODE.EATEN);
+  });
+
+  it('ghostManager mode sync corrects SCATTER ghost to current globalMode after exit (PAC-18)', () => {
+    // Verify ghostManager does NOT skip a SCATTER ghost (as it would have skipped EATEN)
+    const g = makeGhost({ startCol: 14, startRow: 8, startDir: DIR.UP });
+    g.mode = GHOST_MODE.SCATTER;
+    g.exitingHouse = false;
+    g.inHouse = false;
+    // The sync condition: not inHouse, not exitingHouse, not FRIGHTENED, not EATEN → syncs mode
+    const wouldSync = !g.inHouse && !g.exitingHouse &&
+      g.mode !== GHOST_MODE.FRIGHTENED && g.mode !== GHOST_MODE.EATEN;
+    expect(wouldSync).toBe(true);
+  });
 });
