@@ -1,4 +1,4 @@
-import { CELL, MAZE_COLS, MAZE_ROWS, MAZE_OFFSET_Y, BASE_SPEED, DIR, GHOST_MODE, FRIGHTENED_DURATION, FRIGHTENED_FLASH_START, COLORS } from '../constants.js';
+import { CELL, MAZE_COLS, MAZE_ROWS, MAZE_OFFSET_Y, BASE_SPEED, GHOST_SPEED_FACTOR, DIR, GHOST_MODE, FRIGHTENED_DURATION, FRIGHTENED_FLASH_START, COLORS } from '../constants.js';
 import { MAZE_DATA } from '../maze.js';
 
 export function isGhostPassable(row, col) {
@@ -35,7 +35,7 @@ export class Ghost {
     this.mode = 'scatter';
     this.inHouse = inHouse;
     this.exitingHouse = false;
-    this.speed = BASE_SPEED;
+    this.speed = BASE_SPEED * GHOST_SPEED_FACTOR;
     this.targetTile = scatterTarget;
     this.chaseTargetFn = null;
     this.dotThreshold = 0;
@@ -78,7 +78,7 @@ export class Ghost {
       // Bob up/down between row 13.5 and row 15
       const minY = 13.5 * CELL + CELL / 2;
       const maxY = 15 * CELL + CELL / 2;
-      const halfSpeed = BASE_SPEED * 0.5;
+      const halfSpeed = BASE_SPEED * GHOST_SPEED_FACTOR * 0.5;
       this.y += this._bobDir * halfSpeed * dt;
       if (this.y <= minY) { this.y = minY; this._bobDir = 1; }
       if (this.y >= maxY) { this.y = maxY; this._bobDir = -1; }
@@ -89,7 +89,7 @@ export class Ghost {
       const gateX = 13.5 * CELL + CELL / 2;
       const gateY = 12 * CELL + CELL / 2;
       const exitY = 11 * CELL + CELL / 2;
-      const moveSpeed = BASE_SPEED * 0.5;
+      const moveSpeed = BASE_SPEED * GHOST_SPEED_FACTOR * 0.5;
 
       // Move horizontally to gate center
       if (Math.abs(this.x - gateX) > 1) {
@@ -130,7 +130,7 @@ export class Ghost {
         return;
       }
 
-      this.speed = BASE_SPEED * 2;
+      this.speed = BASE_SPEED * GHOST_SPEED_FACTOR * 2;
       this.x += this.dir.x * this.speed * dt;
       this.y += this.dir.y * this.speed * dt;
 
@@ -158,11 +158,11 @@ export class Ghost {
 
     // Speed adjustments
     if (tile.row === 14 && (tile.col <= 5 || tile.col >= 22)) {
-      this.speed = BASE_SPEED * 0.5; // tunnel
+      this.speed = BASE_SPEED * GHOST_SPEED_FACTOR * 0.5; // tunnel
     } else if (this.mode === GHOST_MODE.FRIGHTENED) {
-      this.speed = BASE_SPEED * 0.5;
+      this.speed = BASE_SPEED * GHOST_SPEED_FACTOR * 0.5;
     } else {
-      this.speed = BASE_SPEED;
+      this.speed = BASE_SPEED * GHOST_SPEED_FACTOR;
     }
 
     // Move

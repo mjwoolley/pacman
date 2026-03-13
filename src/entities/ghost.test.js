@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Ghost, isGhostPassable, getAvailableDirections } from './ghost.js';
-import { CELL, DIR, COLORS, GHOST_MODE } from '../constants.js';
+import { CELL, DIR, COLORS, GHOST_MODE, BASE_SPEED, GHOST_SPEED_FACTOR } from '../constants.js';
 
 function makeGhost(overrides = {}) {
   return new Ghost(
@@ -181,6 +181,30 @@ describe('Frightened mode', () => {
       const isValid = available.some(d => d.x === g.dir.x && d.y === g.dir.y);
       expect(isValid).toBe(true);
     }
+  });
+});
+
+describe('Ghost speed values', () => {
+  it('initializes with speed = BASE_SPEED * GHOST_SPEED_FACTOR', () => {
+    const g = makeGhost();
+    expect(g.speed).toBe(BASE_SPEED * GHOST_SPEED_FACTOR);
+  });
+
+  it('sets frightened speed to BASE_SPEED * GHOST_SPEED_FACTOR * 0.5', () => {
+    const g = makeGhost({ startCol: 6, startRow: 5, startDir: DIR.LEFT });
+    g.mode = GHOST_MODE.FRIGHTENED;
+    const pac = mockPacman();
+    g.update(0.016, pac, null); // tick to trigger speed assignment
+    expect(g.speed).toBeCloseTo(BASE_SPEED * GHOST_SPEED_FACTOR * 0.5);
+  });
+
+  it('sets eaten speed to BASE_SPEED * GHOST_SPEED_FACTOR * 2', () => {
+    const g = makeGhost({ startCol: 6, startRow: 5, startDir: DIR.LEFT });
+    g.mode = GHOST_MODE.EATEN;
+    g.eaten = true;
+    const pac = mockPacman();
+    g.update(0.016, pac, null);
+    expect(g.speed).toBeCloseTo(BASE_SPEED * GHOST_SPEED_FACTOR * 2);
   });
 });
 
