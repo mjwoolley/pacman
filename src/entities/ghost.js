@@ -123,6 +123,7 @@ export class Ghost {
       // Reached the gate area — reset into house
       if (tile.row >= 11 && tile.row <= 12 && (tile.col === 13 || tile.col === 14)) {
         this.eaten = false;
+        this.mode = GHOST_MODE.SCATTER; // reset mode so ghost regenerates as normal on exit
         this.x = 14 * CELL + CELL / 2;
         this.y = 14 * CELL + CELL / 2;
         this.exitingHouse = true;
